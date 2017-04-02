@@ -15,13 +15,14 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Target(METHOD)
 public @interface Command {
 
-    String name() default "";
-    String permission() default "";
-    String wildcards() default "";
-    boolean player() default false;
+    String name() default ""; // Command main name.
 
-    String permissionError() default "";
-    String playerError() default "";
-    String argumentsError() default "";
+    String permission() default ""; // Command would only run if the sender has this permission.
+    String wildcards() default ""; // Command would only run if the arguments are met, with the exception of the wildcards symbol ( * ).
+    boolean player() default false; // Command would only run if the sender is a player.
+
+    String permissionError() default ""; // Insufficient Permission Error.
+    String argumentsError() default ""; // Invalid arguments Error.
+    String playerError() default "";  // Sender must be a player Error.
 
 }
