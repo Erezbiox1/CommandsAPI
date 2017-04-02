@@ -25,60 +25,64 @@ public class CommandManager {
     private static final String playerErrorDefault = errorPrefix + "You must be a player to access this command.";
     private static final String argumentsErrorDefault = errorPrefix + "Invalid Arguments, Please try again!";
 
-    public static void register(CommandListener commandListener) {
+    public static void register(CommandListener... commandListeners) {
 
-        Class<?> _class = commandListener.getClass();
-        Method[] methods = _class.getMethods();
+        for(CommandListener commandListener: commandListeners) {
 
-        for (Method method : methods) {
-            if (method.isAnnotationPresent(Command.class)) {
+            Class<?> _class = commandListener.getClass();
+            Method[] methods = _class.getMethods();
 
-                Command command = method.getAnnotation(Command.class);
+            for (Method method : methods) {
+                if (method.isAnnotationPresent(Command.class)) {
 
-                String commandName = command.name().isEmpty() ? method.getName() : command.name();
-                String commandPermission = command.permission();
-                String wildcards = command.wildcards();
-                boolean commandPlayer = command.player();
+                    Command command = method.getAnnotation(Command.class);
 
-                String permissionError = command.permissionError().isEmpty() ? permissionErrorDefault : command.permissionError();
-                String playerError = command.playerError().isEmpty() ? playerErrorDefault : command.playerError();
-                String argumentsError = command.argumentsError().isEmpty() ? argumentsErrorDefault : command.argumentsError();
+                    String commandName = command.name().isEmpty() ? method.getName() : command.name();
+                    String commandPermission = command.permission();
+                    String wildcards = command.wildcards();
+                    boolean commandPlayer = command.player();
 
-                new CustomCommand(commandName) {
+                    String permissionError = command.permissionError().isEmpty() ? permissionErrorDefault : command.permissionError();
+                    String playerError = command.playerError().isEmpty() ? playerErrorDefault : command.playerError();
+                    String argumentsError = command.argumentsError().isEmpty() ? argumentsErrorDefault : command.argumentsError();
 
-                    @Override
-                    public boolean execute(CommandSender commandSender, String com, String[] args){
-                        try {
+                    new CustomCommand(commandName) {
 
-                            if (!permissionCheck(commandPermission, commandSender)){
-                                commandSender.sendMessage(permissionError);
-                                return true;
+                        @Override
+                        public boolean execute(CommandSender commandSender, String com, String[] args) {
+                            try {
+
+                                if (!permissionCheck(commandPermission, commandSender)) {
+                                    commandSender.sendMessage(permissionError);
+                                    return true;
+                                }
+                                if (!playerCheck(commandPlayer, commandSender)) {
+                                    commandSender.sendMessage(playerError);
+                                    return true;
+                                }
+                                if (!argsCheck(wildcards, args)) {
+                                    commandSender.sendMessage(argumentsError);
+                                    return true;
+                                }
+
+                                if (commandPlayer && !wildcards.isEmpty()) // Both player and wildcard
+                                    method.invoke(commandListener, (Player) commandSender, getArgs(wildcards, args));
+                                else if (!commandPlayer && !wildcards.isEmpty()) // Only Wildcard
+                                    method.invoke(commandListener, commandSender, getArgs(wildcards, args));
+                                else if (commandPlayer && wildcards.isEmpty()) // Only Player
+                                    method.invoke(commandListener, (Player) commandSender, args);
+                                else if (!commandPlayer && wildcards.isEmpty()) // Neither.
+                                    method.invoke(commandListener, commandSender, args);
+                            } catch (Exception e) {
+                                e.printStackTrace();
                             }
-                            if (!playerCheck(commandPlayer, commandSender)){
-                                commandSender.sendMessage(playerError);
-                                return true;
-                            }
-                            if (!argsCheck(wildcards, args)){
-                                commandSender.sendMessage(argumentsError);
-                                return true;
-                            }
 
-                            if(commandPlayer && !wildcards.isEmpty()) // Both player and wildcard
-                                method.invoke(commandListener, (Player) commandSender, getArgs(wildcards, args));
-                            else if(!commandPlayer && !wildcards.isEmpty()) // Only Wildcard
-                                method.invoke(commandListener, commandSender, getArgs(wildcards, args));
-                            else if(commandPlayer && wildcards.isEmpty()) // Only Player
-                                method.invoke(commandListener, (Player) commandSender, args);
-                            else if(!commandPlayer && wildcards.isEmpty()) // Neither.
-                                method.invoke(commandListener, commandSender, args);
-                        } catch (Exception e){
-                            e.printStackTrace();
+                            return true;
                         }
-
-                        return true;
-                    }
-                };
+                    };
+                }
             }
+
         }
 
     }
