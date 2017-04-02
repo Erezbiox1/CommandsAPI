@@ -16,6 +16,7 @@ import static net.md_5.bungee.api.ChatColor.*;
  * Created by Erezbiox1 on 27/03/2017.
  * (C) 2016 Erez Rotem All Rights Reserved.
  */
+@SuppressWarnings("ALL")
 public class CommandManager {
 
     // This is the wildcard symbol, This Can be changed.
