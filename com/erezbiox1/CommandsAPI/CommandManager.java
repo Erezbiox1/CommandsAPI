@@ -7,8 +7,7 @@ import org.bukkit.command.defaults.BukkitCommand;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static net.md_5.bungee.api.ChatColor.*;
 
@@ -30,34 +29,53 @@ public class CommandManager {
     public static void register(CommandListener... commandListeners) {
 
         // Do the following for each class provided.
-        for(CommandListener commandListener: commandListeners) {
+        for (CommandListener commandListener : commandListeners) {
 
             // Get the class, then all of the methods in the class.
             Class<?> _class = commandListener.getClass();
-            Method[] methods = _class.getMethods();
+            Method[] classMethods = _class.getMethods();
 
-            for (Method method : methods) {
+            Map<String, Set<Method>> map = new HashMap<>();
 
-                // Check if the method has the command annotation.
+            for (Method method : classMethods) {
                 if (method.isAnnotationPresent(Command.class)) {
 
-                    //Get staff from the annotation.
-                    Command command = method.getAnnotation(Command.class);
+                    String name = method.getAnnotation(Command.class).name().isEmpty() ? method.getName() : method.getAnnotation(Command.class).name();
+                    if (!map.containsKey(name)) {
 
-                    String commandName = command.name().isEmpty() ? method.getName() : command.name();
-                    String commandPermission = command.permission();
-                    String wildcards = command.wildcards();
-                    boolean commandPlayer = command.player();
+                        Set<Method> set = new HashSet<>();
+                        set.add(method);
+                        map.put(name, set);
 
-                    String permissionError = command.permissionError().isEmpty() ? permissionErrorDefault : command.permissionError();
-                    String playerError = command.playerError().isEmpty() ? playerErrorDefault : command.playerError();
-                    String argumentsError = command.argumentsError().isEmpty() ? argumentsErrorDefault : command.argumentsError();
+                    } else {
 
-                    //Register the command.
-                    new CustomCommand(commandName) {
+                        map.get(name).add(method);
 
-                        @Override
-                        public boolean execute(CommandSender commandSender, String com, String[] args) {
+                    }
+                }
+            }
+
+            map.forEach((commandName, methods) -> {
+
+                //Register the command.
+                new CustomCommand(commandName) {
+
+                    @Override
+                    public boolean execute(CommandSender commandSender, String com, String[] args) {
+
+                        for (Method method : methods) {
+
+                            //Get staff from the annotation.
+                            Command command = method.getAnnotation(Command.class);
+
+                            String commandPermission = command.permission();
+                            String wildcards = command.wildcards();
+                            boolean commandPlayer = command.player();
+
+                            String permissionError = command.permissionError().isEmpty() ? permissionErrorDefault : command.permissionError();
+                            String playerError = command.playerError().isEmpty() ? playerErrorDefault : command.playerError();
+                            String argumentsError = command.argumentsError().isEmpty() ? argumentsErrorDefault : command.argumentsError();
+
                             try {
 
                                 // Check if the sender is a player, has enough permissions, and weather or not his arguments match.
@@ -91,15 +109,14 @@ public class CommandManager {
                                 e.printStackTrace();
                             }
 
-                            // We want to send our own error message.
-                            return true;
                         }
-                    };
-                }
-            }
 
+                        // We want to send our own error message.
+                        return true;
+                    }
+                };
+            });
         }
-
     }
 
     private static boolean permissionCheck(String permission, CommandSender sender) {
@@ -111,23 +128,23 @@ public class CommandManager {
         return !player || sender instanceof Player;
     }
 
-    private static boolean argsCheck(String wildcard, String[] args){
+    private static boolean argsCheck(String wildcard, String[] args) {
 
         // Check if there is anything to check. Then splitting the wildcards.
-        if(wildcard.isEmpty()) return true;
+        if (wildcard.isEmpty()) return true;
         String[] wildcards = wildcard.split(" ");
 
         // Check for the length, this will prevent NPE's.
-        if(wildcards.length != args.length) return false;
+        if (wildcards.length != args.length) return false;
 
         for (int i = 0; i < wildcards.length; i++) {
 
             // Wildcard would override.
-            if(wildcards[i].equals(wildcardSymbol))
+            if (wildcards[i].equals(wildcardSymbol))
                 continue;
 
             // Check if the static argument matches the desired argument.
-            if(!wildcards[i].toLowerCase().equals(args[i].toLowerCase()))
+            if (!wildcards[i].toLowerCase().equals(args[i].toLowerCase()))
                 return false;
 
         }
@@ -135,7 +152,7 @@ public class CommandManager {
         return true;
     }
 
-    private static String[] getArgs(String wildcard, String[] args){
+    private static String[] getArgs(String wildcard, String[] args) {
 
         // Splits the wildcards
         String[] wildcards = wildcard.split(" ");
@@ -143,7 +160,7 @@ public class CommandManager {
 
         // Add every wildcarded argument to the list.
         for (int i = 0; i < wildcards.length; i++) {
-            if(wildcards[i].equals(wildcardSymbol))
+            if (wildcards[i].equals(wildcardSymbol))
                 list.add(args[i]);
         }
 
@@ -165,7 +182,8 @@ public class CommandManager {
                         .getMethod("getCommandMap").invoke(Bukkit.getServer());
                 smp.register(name, this);
                 register(smp);
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
 
     }
