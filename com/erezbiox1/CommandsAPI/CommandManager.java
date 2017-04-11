@@ -35,20 +35,27 @@ public class CommandManager {
             Class<?> _class = commandListener.getClass();
             Method[] classMethods = _class.getMethods();
 
+            // Combine all of the methods with the same name to a set
             Map<String, Set<Method>> map = new HashMap<>();
 
             for (Method method : classMethods) {
+
                 if (method.isAnnotationPresent(Command.class)) {
 
+                    // Get the name
                     String name = method.getAnnotation(Command.class).name().isEmpty() ? method.getName() : method.getAnnotation(Command.class).name();
+
+                    // Check if the map already has that name
                     if (!map.containsKey(name)) {
 
+                        // If it doesn't create one and add yourself to it.
                         Set<Method> set = new HashSet<>();
                         set.add(method);
                         map.put(name, set);
 
                     } else {
 
+                        // If the map does have that name, add on to that.
                         map.get(name).add(method);
 
                     }
@@ -63,6 +70,7 @@ public class CommandManager {
                     @Override
                     public boolean execute(CommandSender commandSender, String com, String[] args) {
 
+                        // Register every method with that name.
                         for (Method method : methods) {
 
                             //Get staff from the annotation.
@@ -171,6 +179,7 @@ public class CommandManager {
         return array;
     }
 
+    // Bukkit reflection stuff and shit.
     abstract static class CustomCommand extends BukkitCommand {
 
         CustomCommand(String name) {
