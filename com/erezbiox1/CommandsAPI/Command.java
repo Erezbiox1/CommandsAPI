@@ -11,6 +11,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * (C) 2016 Erez Rotem All Rights Reserved.
  */
 
+@SuppressWarnings("unused")
 @Retention(RUNTIME)
 @Target(METHOD)
 public @interface Command {

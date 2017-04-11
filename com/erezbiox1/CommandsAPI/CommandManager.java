@@ -35,6 +35,12 @@ public class CommandManager {
             Class<?> _class = commandListener.getClass();
             Method[] classMethods = _class.getMethods();
 
+            CommandClass commandClass = null;
+
+            if(_class.isAnnotationPresent(CommandClass.class)){
+                commandClass = _class.getAnnotation(CommandClass.class);
+            }
+
             // Combine all of the methods with the same name to a set
             Map<String, Set<Method>> map = new HashMap<>();
 
@@ -43,7 +49,15 @@ public class CommandManager {
                 if (method.isAnnotationPresent(Command.class)) {
 
                     // Get the name
-                    String name = method.getAnnotation(Command.class).name().isEmpty() ? method.getName() : method.getAnnotation(Command.class).name();
+
+                    String name;
+                    if(!method.getAnnotation(Command.class).name().isEmpty()){
+                        name = method.getAnnotation(Command.class).name();
+                    } else if (commandClass != null && !commandClass.name().isEmpty()){
+                        name = commandClass.name();
+                    } else {
+                        name = method.getName();
+                    }
 
                     // Check if the map already has that name
                     if (!map.containsKey(name)) {
@@ -74,15 +88,18 @@ public class CommandManager {
                         for (Method method : methods) {
 
                             //Get staff from the annotation.
+                            CommandClass _commandClass = method.getClass().getAnnotation(CommandClass.class);
                             Command command = method.getAnnotation(Command.class);
 
-                            String commandPermission = command.permission();
-                            String wildcards = command.wildcards();
+                            String commandPermission = command.permission().isEmpty() ? _commandClass.permission() : command.permission();
                             boolean commandPlayer = command.player();
+                            String wildcards = command.wildcards();
 
                             String permissionError = command.permissionError().isEmpty() ? permissionErrorDefault : command.permissionError();
                             String playerError = command.playerError().isEmpty() ? playerErrorDefault : command.playerError();
                             String argumentsError = command.argumentsError().isEmpty() ? argumentsErrorDefault : command.argumentsError();
+
+
 
                             try {
 
