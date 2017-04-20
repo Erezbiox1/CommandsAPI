@@ -40,3 +40,7 @@ Meaning if the wildcards is the following:
 and the user enters
   pex group Owner user add Erezbiox1
 The method will give you only the "Owner" and the "Erezbiox1".
+
+
+# Maven
+[See me on Jitpack!](https://jitpack.io/#Erezbiox1/CommandsAPI)
