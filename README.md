@@ -1,4 +1,4 @@
-# CommandsAPI
+# CommandsAPI [![](https://jitpack.io/v/Erezbiox1/CommandsAPI.svg)](https://jitpack.io/#Erezbiox1/CommandsAPI)
 
 // This readme is outdated, a new one is on the way!
 
@@ -43,3 +43,18 @@ Meaning if the wildcards is the following:
 and the user enters
   pex group Owner user add Erezbiox1
 The method will give you only the "Owner" and the "Erezbiox1".
+
+# [Maven Support](https://jitpack.io/#Erezbiox1/CommandsAPI)
+	
+	<repositories>
+		<repository>
+		    <id>jitpack.io</id>
+		    <url>https://jitpack.io</url>
+		</repository>
+	</repositories>
+
+	<dependency>
+	    <groupId>com.github.Erezbiox1</groupId>
+	    <artifactId>CommandsAPI</artifactId>
+	    <version>2.0.0</version>
+	</dependency>
