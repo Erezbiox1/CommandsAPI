@@ -1,6 +1,6 @@
 # CommandsAPI [![](https://jitpack.io/v/Erezbiox1/CommandsAPI.svg)](https://jitpack.io/#Erezbiox1/CommandsAPI)
 
-// This readme is outdated, a new one is on the way!
+// This readme is outdated, ~~a new one is on the way!~~ [link to a better guide](https://www.spigotmc.org/resources/commandsapi.40208/)
 
 How to use:
 1. Implement CommandListener in the wanted class.
