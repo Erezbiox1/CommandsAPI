@@ -8,6 +8,8 @@ import org.bukkit.entity.Player;
 
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static net.md_5.bungee.api.ChatColor.*;
 
@@ -15,12 +17,14 @@ import static net.md_5.bungee.api.ChatColor.*;
  * Created by Erezbiox1 on 18/04/2017.
  * (C) 2016 Erez Rotem All Rights Reserved.
  */
-@SuppressWarnings("Duplicates")
+@SuppressWarnings({"Duplicates", "unused"})
 public class CommandManager {
 
     // Constant
     private static final String
             wildcardSymbol = "*",
+            numberWildcardSymbol = "**",
+            eitherSymbol = "|",
             errorPrefix = RED + "" + BOLD + "Sorry!" + RESET + GRAY + " ",
             permissionErrorDefault = errorPrefix + "You don't have permission to access this command.",
             playerErrorDefault = errorPrefix + "You must be a player to access this command.",
@@ -104,96 +108,90 @@ public class CommandManager {
     }
 
     private static void registerCommands(CommandListener listener, Map<String, Set<Method>> map){
-        map.forEach((name, methods) -> {
+        map.forEach((name, methods) -> new CustomCommand(name) {
 
-            new CustomCommand(name) {
+            @Override
+            public boolean execute(CommandSender sender, String cmd, String[] args) {
 
-                @Override
-                public boolean execute(CommandSender sender, String cmd, String[] args) {
+                String error = "";
 
-                    String error = "";
+                for (Method method : methods) {
 
-                    for (Method method : methods) {
+                    Command command = method.getAnnotation(Command.class);
 
-                        Command command = method.getAnnotation(Command.class);
+                    String permission = command.permission();
+                    String arguments = command.arguments();
 
-                        String permission = command.permission();
-                        String arguments = command.arguments();
+                    String permissionError = command.permissionError();
+                    String playerError = command.playerError();
+                    String argumentsError = command.argumentsError();
 
-                        String permissionError = command.permissionError();
-                        String playerError = command.playerError();
-                        String argumentsError = command.argumentsError();
+                    if (listener.getClass().isAnnotationPresent(CommandClass.class)) {
 
-                        if (listener.getClass().isAnnotationPresent(CommandClass.class)) {
+                        CommandClass commandClass = method.getClass().getAnnotation(CommandClass.class);
 
-                            CommandClass commandClass = method.getClass().getAnnotation(CommandClass.class);
+                        if (permission.isEmpty())
+                            permission = commandClass.permission();
+                        else permission += commandClass.permission();
 
-                            if (permission.isEmpty())
-                                permission = commandClass.permission();
-                            else permission += commandClass.permission();
-
-
-                            if (permissionError.equals("default"))
-                                permissionError = commandClass.permissionError();
-
-                            if (playerError.equals("default"))
-                                playerError = commandClass.playerError();
-
-                            if (argumentsError.equals("default"))
-                                argumentsError = commandClass.argumentsError();
-
-                        }
 
                         if (permissionError.equals("default"))
-                            permissionError = permissionErrorDefault;
+                            permissionError = commandClass.permissionError();
 
                         if (playerError.equals("default"))
-                            playerError = playerErrorDefault;
+                            playerError = commandClass.playerError();
 
                         if (argumentsError.equals("default"))
-                            argumentsError = argumentsErrorDefault;
-
-
-                        boolean player;
-                        if(method.getParameterTypes().length == 0)
-                            player = false;
-                        else player = method.getParameterTypes()[0].equals(Player.class);
-
-                        if (!playerCheck(player, sender)) {
-                            if (!(playerError.equalsIgnoreCase("none") || playerError.isEmpty()))
-                                error = playerError;
-
-                            continue;
-                        }
-
-                        if (!permissionCheck(permission, sender)) {
-                            if (!(playerError.equalsIgnoreCase("none") || permissionError.isEmpty()))
-                                error = permissionError;
-
-                            continue;
-                        }
-
-                        if (!argumentsCheck(arguments, args)) {
-                            if (!(argumentsError.equalsIgnoreCase("none") || argumentsError.isEmpty()))
-                                error = argumentsError;
-
-                            continue;
-                        }
-
-
-                        run(method, arguments, args, listener, sender, player);
-                        error = "";
-
+                            argumentsError = commandClass.argumentsError();
 
                     }
 
-                    if(!error.equals(""))
-                        sender.sendMessage(error);
+                    if (permissionError.equals("default"))
+                        permissionError = permissionErrorDefault;
 
-                    return true;
+                    if (playerError.equals("default"))
+                        playerError = playerErrorDefault;
+
+                    if (argumentsError.equals("default"))
+                        argumentsError = argumentsErrorDefault;
+
+
+                    boolean player;
+                    player = method.getParameterTypes().length != 0 && method.getParameterTypes()[0].equals(Player.class);
+
+                    if (!playerCheck(player, sender)) {
+                        if (!(playerError.equalsIgnoreCase("none") || playerError.isEmpty()))
+                            error = playerError;
+
+                        continue;
+                    }
+
+                    if (!permissionCheck(permission, sender)) {
+                        if (!(playerError.equalsIgnoreCase("none") || permissionError.isEmpty()))
+                            error = permissionError;
+
+                        continue;
+                    }
+
+                    if (!argumentsCheck(arguments, args)) {
+                        if (!(argumentsError.equalsIgnoreCase("none") || argumentsError.isEmpty()))
+                            error = argumentsError;
+
+                        continue;
+                    }
+
+
+                    run(method, arguments, args, listener, sender, player);
+                    error = "";
+
+
                 }
 
-            };
+                if(!error.equals(""))
+                    sender.sendMessage(error);
+
+                return true;
+            }
 
         });
     }
@@ -266,16 +264,19 @@ public class CommandManager {
             if (wildcards[i].equals(wildcardSymbol))
                 continue;
 
+            // Check if multiple values work for this argument. Example: "group|player" matches both group and player.
+            if (wildcards[i].contains(eitherSymbol))
+                for (String o :  wildcards[i].split("\\|"))
+                    if (!o.equalsIgnoreCase(args[i]))
+                        return false;
+
+            //Check if the argument is a number.
+            if(wildcards[i].contains(numberWildcardSymbol))
+                if(!isNumber(wildcards[i]))
+                    return false;
+
             // Check if the static argument matches the desired argument.
-            if (wildcards[i].contains("|")) { // Check if multiple values work for this argument. Example: "group|player" matches both group and player.
-                String[] options = wildcards[i].split("\\|");
-                boolean found = false;
-                for (String o : options) {
-                    if (o.equalsIgnoreCase(args[i])) found = true;
-                }
-                if (!found) return false;
-            }
-            else if (!wildcards[i].toLowerCase().equals(args[i].toLowerCase()))
+            if (!wildcards[i].toLowerCase().equals(args[i].toLowerCase()))
                 return false;
 
         }
@@ -291,7 +292,7 @@ public class CommandManager {
 
         // Add every wildcarded argument to the list.
         for (int i = 0; i < wildcards.length; i++) {
-            if (wildcards[i].equals(wildcardSymbol))
+            if (wildcards[i].equals(wildcardSymbol) || wildcards[i].contains(eitherSymbol) || wildcards[i].equals(numberWildcardSymbol))
                 list.add(args[i]);
         }
 
@@ -300,6 +301,12 @@ public class CommandManager {
         array = list.toArray(array);
 
         return array;
+    }
+
+    private static boolean isNumber(String string){
+
+        //Not my code. Open to suggestions.
+        return string.matches("-?\\d+(\\.\\d+)?");
     }
 
     // Bukkit reflection stuff and shit.
