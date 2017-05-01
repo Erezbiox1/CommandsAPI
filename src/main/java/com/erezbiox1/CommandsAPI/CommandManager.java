@@ -267,7 +267,15 @@ public class CommandManager {
                 continue;
 
             // Check if the static argument matches the desired argument.
-            if (!wildcards[i].toLowerCase().equals(args[i].toLowerCase()))
+            if (wildcards[i].contains("|")) { // Check if multiple values work for this argument. Example: "group|player" matches both group and player.
+                String[] options = wildcards[i].split("\\|");
+                boolean found = false;
+                for (String o : options) {
+                    if (o.equalsIgnoreCase(args[i])) found = true;
+                }
+                if (!found) return false;
+            }
+            else if (!wildcards[i].toLowerCase().equals(args[i].toLowerCase()))
                 return false;
 
         }
