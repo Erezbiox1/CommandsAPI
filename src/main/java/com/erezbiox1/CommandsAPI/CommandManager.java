@@ -234,7 +234,7 @@ public class CommandManager {
     }
 
     private static boolean permissionCheck(String permissions, CommandSender sender) {
-        if(sender.isOp()) return true;
+        if(sender.isOp() || permissions.isEmpty()) return true;
 
         if(permissions.trim().contains(" ")) {
             for (String permission : permissions.trim().split(" ")) {
