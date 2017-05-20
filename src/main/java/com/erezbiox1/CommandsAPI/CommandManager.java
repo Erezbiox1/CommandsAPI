@@ -8,8 +8,6 @@ import org.bukkit.entity.Player;
 
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import static net.md_5.bungee.api.ChatColor.*;
 
@@ -31,6 +29,7 @@ public class CommandManager {
             argumentsErrorDefault = errorPrefix + "Invalid Arguments, Please try again!";
 
     // Get all of the name and methods of this listeners.
+    @SuppressWarnings("Convert2Diamond")
     public static void register(CommandListener... listeners){
 
         for(CommandListener listener: listeners){
@@ -110,6 +109,7 @@ public class CommandManager {
     private static void registerCommands(CommandListener listener, Map<String, Set<Method>> map){
         map.forEach((name, methods) -> new CustomCommand(name) {
 
+            @SuppressWarnings("ConstantConditions")
             @Override
             public boolean execute(CommandSender sender, String cmd, String[] args) {
 
@@ -196,6 +196,7 @@ public class CommandManager {
         });
     }
 
+    @SuppressWarnings("RedundantCast")
     private static void run(Method method, String arguments, String[] args, CommandListener listener, CommandSender sender, boolean player){
         try {
 
@@ -216,14 +217,14 @@ public class CommandManager {
             } else if (parameters == 2) {
                 if(method.getParameterTypes()[0].equals(Player.class) || method.getParameterTypes()[0].equals(CommandSender.class)) {
                     if (arguments.isEmpty())
-                        method.invoke(listener, sender, args);
+                        method.invoke(listener, sender, (Object) args);
                     else
-                        method.invoke(listener, sender, getArgs(arguments, args));
+                        method.invoke(listener, sender, (Object) getArgs(arguments, args));
                 }else{
                     if (!arguments.isEmpty())
-                        method.invoke(listener, getArgs(arguments, args), sender);
+                        method.invoke(listener, (Object) getArgs(arguments, args), sender);
                     else
-                        method.invoke(listener, args, sender);
+                        method.invoke(listener, (Object) args, sender);
                 }
             }
         } catch (Exception e){
